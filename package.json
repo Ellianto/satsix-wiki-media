@@ -1,0 +1,23 @@
+{
+  "name": "satsix-wiki-media",
+  "version": "1.0.0",
+  "description": "Sample bot for creating a canvas image with specific layouts",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "discord",
+    "canvas",
+    "image"
+  ],
+  "author": "Ellianto",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^12.5.3",
+    "dotenv": "^10.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^7.31.0"
+  }
+}
