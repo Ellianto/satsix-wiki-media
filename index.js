@@ -12,8 +12,10 @@ const BOT_COMMANDS = {
   TESTING : 'test',
 };
 
+
 // require the discord.js module
 const Discord = require('discord.js');
+const canvasHandler = require('./canvasHandler');
 
 // create a new Discord client
 const client = new Discord.Client();
@@ -61,11 +63,18 @@ client.on('message', async message => {
         return message.channel.send(scrapedText ? `Here's what I scraped:\n${scrapedText}` : `Failed to scrape anything from that link :(`);
       case BOT_COMMANDS.TESTING:
         console.log("Scraping...");
-        const testingWikiLink = 'https://7dsgc.fandom.com/wiki/Red_Purgatory_Ban';
-        const textContent = await scraper.scrape7DSWiki(testingWikiLink);
-        const imageUrl = await scraper.getCharacterImage(testingWikiLink);
+        const testingWikiLink = 'https://7dsgc.fandom.com/wiki/Blue_%22The_One%22_Escanor';
+        // const textContent = await scraper.scrape7DSWiki(testingWikiLink);
+        // const charImageUrl = await scraper.getCharacterImage(testingWikiLink);
+        // const statsImageUrls = await scraper.getStatsImages(testingWikiLink);
 
-        const fileImage = imageUrl ? {
+        const {
+          textContent,
+          charImageUrl,
+          statsImageUrls,
+        } = await scraper.scrape7DSWiki(testingWikiLink);
+
+        const fileImage = charImageUrl ? {
           embeds: [
             {
               thumbnail: {
@@ -74,15 +83,19 @@ client.on('message', async message => {
             }
           ],
           files: [{
-            attachment: imageUrl,
+            attachment: charImageUrl,
             name: 'charImage.png',
           }],
         } : {}
 
         return message.channel.send({
-          content: textContent,
-          ...fileImage,
-        });
+          files: [await canvasHandler.generateCanvasImage(textContent, charImageUrl, statsImageUrls)]
+        })
+
+        // return message.channel.send({
+        //   content: textContent,
+        //   ...fileImage,
+        // });
       default:
         break;
     }

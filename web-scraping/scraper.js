@@ -342,10 +342,7 @@ const scrapeCharacterSkills = async (page) => {
   }
 };
 
-async function getCharacterImage(wikiLink) {
-  const browserPage = await __createPage(__browserPromise);
-  await browserPage.goto(wikiLink);
-
+async function getCharacterImage(browserPage) {
   await browserPage.waitForSelector("aside");
 
   const imageUrl = await browserPage.$eval("aside", (asideEl) => {
@@ -355,14 +352,25 @@ async function getCharacterImage(wikiLink) {
   });
 
   return imageUrl || null;
+};
+
+async function getStatsImages(browserPage) {
+  const ratingIdentifier = '[id="Hero_Rating_&_Base_Stats"]';
+
+  await browserPage.waitForSelector(ratingIdentifier);
+
+  const imageUrl = await browserPage.$eval(ratingIdentifier, (element) => {
+    const [radarChartEl, statsBarEl] = element.parentElement.nextElementSibling.querySelectorAll('img');
+
+    return [radarChartEl.src, statsBarEl.src];
+  });
+
+  return imageUrl || [];
 }
 
 // This is very dependent on the format of the page
-async function scrape7DSWiki(wikiLink) {
-  const browserPage = await __createPage(__browserPromise);
-  await browserPage.goto(wikiLink);
-
-  // TODO: Investigate how to handle allSettled better
+async function getCharacterTextContent(browserPage) {
+  // TODO: Investigate how to handle allSettled better  
   // TODO: Since we're using allSettled here, make sure each function
   // has a valid return value and proper error catching later
   const [
@@ -415,11 +423,30 @@ Ultimate:
 ${characterUltimate.value || "`Failed to scrape ultimate :(`"}
 
 Unique: 
-${characterUnique.value || "`Failed to scrape unique :(`"}
-  `;
+${characterUnique.value || "`Failed to scrape unique :(`"}`;
+}
+
+async function scrape7DSWiki (wikiLink) {
+  const browserPage = await __createPage(__browserPromise);
+  await browserPage.goto(wikiLink);
+
+  const [
+    textContent,
+    charImageUrl,
+    statsImageUrls
+  ] = await Promise.all([
+    getCharacterTextContent(browserPage),
+    getCharacterImage(browserPage),
+    getStatsImages(browserPage),
+  ]);
+
+  return {
+    textContent,
+    charImageUrl,
+    statsImageUrls,
+  };
 }
 
 module.exports = {
   scrape7DSWiki,
-  getCharacterImage,
 };
