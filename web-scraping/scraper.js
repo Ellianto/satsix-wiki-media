@@ -251,6 +251,46 @@ const scrapeCharacterEquipment3 = async (page) => {
   }
 };
 
+const scrapeEquipmentSubstats = async (page) => {
+  console.log("Scraping eq substats...");
+  const characterUsageElementIdentifier = "#Usage";
+
+  try {
+    await page.waitForSelector(characterUsageElementIdentifier);
+
+    const elementText = await page.$eval(
+      characterUsageElementIdentifier,
+      (element) => {
+        const parentOfUsage = element.parentElement;
+        let targetSibling = parentOfUsage.nextElementSibling;
+        let targetText = '';
+        
+        // NOTE: A really crude way since the elements are very simple
+        // and doesn't have a specific identifier
+        while (targetSibling.matches(`${parentOfUsage.tagName.toLowerCase()} ~ p`)) {
+          const targetInnerText = targetSibling.innerText;
+
+          if (targetInnerText.includes('Bracer/Ring')) {
+            targetText = targetInnerText.split('\n').splice(1, 3).join('\n');
+            console.log(targetInnerText);
+            break;
+          } else {
+            targetSibling = targetSibling.nextElementSibling;
+          }
+        }
+
+        return targetText;
+      }
+    );
+
+    console.log("Scraping done for eq substats!");
+    return elementText || null;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
 const scrapeCharacterSkills = async (page) => {
   console.log("Scraping skills...");
   const characterSkillsElementIdentifier = "#Skills";
@@ -280,8 +320,7 @@ const scrapeCharacterSkills = async (page) => {
             thirdRow,
           ] = tableEl.querySelectorAll('tr');
         
-          return `**${titleRow.innerText}**\n${parseSkillText(firstRowWithImage)}\n${parseSkillText(secondRow)}\n${parseSkillText(thirdRow)}
-          `;
+          return `**${titleRow.innerText}**\n${parseSkillText(firstRowWithImage)}\n${parseSkillText(secondRow)}\n${parseSkillText(thirdRow)}`;
         };
 
         const parentOfSkills = element.parentElement;
@@ -291,7 +330,7 @@ const scrapeCharacterSkills = async (page) => {
         const firstSkill = parseSkillHTMLTable(firstSkillTable);
         const secondSkill = parseSkillHTMLTable(secondSkillTable);
 
-        return firstSkill + '\n' + secondSkill;
+        return firstSkill + '\n\n' + secondSkill;
       }
     );
 
@@ -332,6 +371,7 @@ async function scrape7DSWiki(wikiLink) {
     charEq1,
     charEq2,
     charEq3,
+    charEqSubstats,
     characterSkills,
     characterRace,
     characterUltimate,
@@ -342,6 +382,7 @@ async function scrape7DSWiki(wikiLink) {
     scrapeCharacterEquipment1(browserPage),
     scrapeCharacterEquipment2(browserPage),
     scrapeCharacterEquipment3(browserPage),
+    scrapeEquipmentSubstats(browserPage),
     scrapeCharacterSkills(browserPage),
     scrapeCharacterRace(browserPage),
     scrapeCharacterUltimate(browserPage),
@@ -365,6 +406,7 @@ ${
   charEq2.value ? `Set 2 : ${charEq2.value}` : "`Failed to scrape eq. set 2 :(`"
 }
 ${charEq3.value ? `Set 3 : ${charEq3.value}` : ""}
+${charEqSubstats.value ? `Eq. Substats:\n${charEqSubstats.value}` : ""}
 
 Skills:
 ${characterSkills.value || "`Failed to scrape skills :(`"}
