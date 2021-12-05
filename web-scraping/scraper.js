@@ -1,12 +1,13 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require("puppeteer");
 
 // run in a non-headless mode
-const __browserPromise = puppeteer.launch({     
+const __browserPromise = puppeteer.launch({
   headless: true,
 });
 
-const __createPage = async (browserInstance) => {
+const __createPage = async (browserPromise) => {
   // Create new page
+  const browserInstance = await browserPromise;
   const page = await browserInstance.newPage();
 
   // Set browser viewport
@@ -14,74 +15,369 @@ const __createPage = async (browserInstance) => {
   return page;
 };
 
+const scrapeCharacterUltimate = async (page) => {
+  console.log("Scraping ultimate...");
+  const characterUltimateElementIdentifier = "#Ultimate";
+
+  // Tries to scrape the Unique Ability
+
+  // We wait until this element loads
+  try {
+    await page.waitForSelector(characterUltimateElementIdentifier);
+
+    // After it loads we scrape the content
+
+    // Doing $eval will give us the reference element
+    // And then inside the function we can use is as a usual HTMLElement
+    // We can't do it in Node Environment so will have to resort to this way
+    const elementText = await page.$eval(
+      characterUltimateElementIdentifier,
+      (element) => {
+        const parentOfUltimate = element.parentElement;
+        const descriptionTable = parentOfUltimate.nextElementSibling;
+
+        const [
+          titleRow,
+          descRow,
+        ] = descriptionTable.querySelectorAll('tr');
+        
+        const ultimateName = titleRow.innerText;
+        const ultimateDesc = descRow.querySelector('td').innerText;
+
+        return `**${ultimateName}** - ${ultimateDesc}`;
+      }
+    );
+
+    console.log("Scraping done for ultimate!");
+    return elementText || null;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+const scrapeCharacterUnique = async (page) => {
+  console.log("Scraping unique...");
+  const characterUniqueElementIdentifier = "#Unique";
+
+  // Tries to scrape the Unique Ability
+
+  // We wait until this element loads
+  try {
+    await page.waitForSelector(characterUniqueElementIdentifier);
+
+    // After it loads we scrape the content
+
+    // Doing $eval will give us the reference element
+    // And then inside the function we can use is as a usual HTMLElement
+    // We can't do it in Node Environment so will have to resort to this way
+    const elementText = await page.$eval(
+      characterUniqueElementIdentifier,
+      (element) => {
+        const parentOfUnique = element.parentElement;
+        const descriptionTable = parentOfUnique.nextElementSibling;
+
+        const [
+          titleRow,
+          descRow,
+        ] = descriptionTable.querySelectorAll('tr');
+        
+        const uniqueName = titleRow.innerText;
+        const uniqueDesc = descRow.querySelector('td').innerText;
+
+        return `**${uniqueName}** - ${uniqueDesc}`;
+      }
+    );
+
+    console.log("Scraping done for unique!");
+    return elementText || null;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+const scrapeCharacterName = async (page) => {
+  console.log("Scraping name...");
+  try {
+    await page.waitForSelector("aside");
+
+    const charName = await page.$eval("aside", (asideEl) => {
+      const nameEl = asideEl.querySelector("h2");
+
+      return nameEl.innerText;
+    });
+
+    console.log("Scraping done for name!");
+    return charName || null;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+const scrapeCharacterAttribute = async (page) => {
+  console.log("Scraping attribute...");
+  try {
+    await page.waitForSelector("aside");
+
+    const charAttr = await page.$eval("aside", (asideEl) => {
+      const dataSourceKey = "attribute";
+
+      const attrEl = asideEl.querySelector(
+        `div.pi-item[data-source="${dataSourceKey}"] > div.pi-data-value img`
+      );
+
+      const tokenizedAlt = attrEl.alt.split(/[\s\.]+/);
+      return tokenizedAlt.length === 3
+        ? tokenizedAlt[1].toUpperCase()
+        : attrEl.alt;
+    });
+
+    console.log("Scraping done for attribute!");
+    return charAttr || null;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+const scrapeCharacterRace = async (page) => {
+  console.log("Scraping race...");
+
+  try {
+    await page.waitForSelector("aside");
+
+    const charRace = await page.$eval("aside", (asideEl) => {
+      const dataSourceKey = "race";
+
+      const attrEl = asideEl.querySelector(
+        `div.pi-item[data-source="${dataSourceKey}"] > div.pi-data-value img`
+      );
+
+      const tokenizedAlt = attrEl.alt.split(/[\s\.]+/);
+      return tokenizedAlt.length === 3 ? tokenizedAlt[1] : attrEl.alt;
+    });
+
+    console.log("Scraping done for race!");
+    return charRace || null;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+const scrapeCharacterEquipment1 = async (page) => {
+  console.log("Scraping eq. 1...");
+
+  try {
+    await page.waitForSelector("aside");
+
+    const charEq1 = await page.$eval("aside", (asideEl) => {
+      const dataSourceKey = "equipment1";
+
+      const targetEl = asideEl.querySelector(
+        `div.pi-item[data-source="${dataSourceKey}"] > div.pi-data-value`
+      );
+
+      const targetText = targetEl.innerText
+        .split(/[\n]+/g)
+        .map((word) => word.trim())
+        .join(" / ");
+      return targetText;
+    });
+
+    console.log("Scraping done for eq. 1!");
+    return charEq1 || null;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+const scrapeCharacterEquipment2 = async (page) => {
+  console.log("Scraping eq. 2...");
+
+  try {
+    await page.waitForSelector("aside");
+
+    const charEq1 = await page.$eval("aside", (asideEl) => {
+      const dataSourceKey = "equipment2";
+
+      const targetEl = asideEl.querySelector(
+        `div.pi-item[data-source="${dataSourceKey}"] > div.pi-data-value`
+      );
+
+      const targetText = targetEl.innerText
+        .split(/[\n]+/g)
+        .map((word) => word.trim())
+        .join(" / ");
+      return targetText;
+    });
+
+    console.log("Scraping done for eq. 2!");
+    return charEq1 || null;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+const scrapeCharacterEquipment3 = async (page) => {
+  console.log("Scraping eq. 3...");
+
+  try {
+    await page.waitForSelector("aside");
+
+    const charEq1 = await page.$eval("aside", (asideEl) => {
+      const dataSourceKey = "equipment3";
+
+      const targetEl = asideEl.querySelector(
+        `div.pi-item[data-source="${dataSourceKey}"] > div.pi-data-value`
+      );
+
+      const targetText = targetEl.innerText
+        .split(/[\n]+/g)
+        .map((word) => word.trim())
+        .join(" / ");
+      return targetText;
+    });
+
+    console.log("Scraping done for eq. 3!");
+    return charEq1 || null;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+const scrapeCharacterSkills = async (page) => {
+  console.log("Scraping skills...");
+  const characterSkillsElementIdentifier = "#Skills";
+
+  // Tries to scrape the Unique Ability
+
+  try {
+    await page.waitForSelector(characterSkillsElementIdentifier);
+
+    const elementText = await page.$eval(
+      characterSkillsElementIdentifier,
+      (element) => {
+        // TODO: For some reason we can't pass an external function into this callback
+        // investigate later
+        const parseSkillText = (rowEl) => {
+          const skillRank = rowEl.querySelectorAll('th:not([rowspan])')[0].innerText;
+          const skillDesc = rowEl.querySelector('td').innerText;
+        
+          return `_${skillRank}:_ ${skillDesc}`;
+        };
+
+        const parseSkillHTMLTable = (tableEl) => {
+          const [
+            titleRow,
+            firstRowWithImage,
+            secondRow,
+            thirdRow,
+          ] = tableEl.querySelectorAll('tr');
+        
+          return `**${titleRow.innerText}**\n${parseSkillText(firstRowWithImage)}\n${parseSkillText(secondRow)}\n${parseSkillText(thirdRow)}
+          `;
+        };
+
+        const parentOfSkills = element.parentElement;
+        const firstSkillTable = parentOfSkills.nextElementSibling;
+        const secondSkillTable = firstSkillTable.nextElementSibling.nextElementSibling;
+
+        const firstSkill = parseSkillHTMLTable(firstSkillTable);
+        const secondSkill = parseSkillHTMLTable(secondSkillTable);
+
+        return firstSkill + '\n' + secondSkill;
+      }
+    );
+
+    console.log("Scraping done for unique!");
+    return elementText || null;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+async function getCharacterImage(wikiLink) {
+  const browserPage = await __createPage(__browserPromise);
+  await browserPage.goto(wikiLink);
+
+  await browserPage.waitForSelector("aside");
+
+  const imageUrl = await browserPage.$eval("aside", (asideEl) => {
+    const imageEl = asideEl.querySelector("img");
+
+    return imageEl.src;
+  });
+
+  return imageUrl || null;
+}
 
 // This is very dependent on the format of the page
 async function scrape7DSWiki(wikiLink) {
-  const browserInstance = await __browserPromise;
-  const browserPage = await __createPage(browserInstance);
+  const browserPage = await __createPage(__browserPromise);
   await browserPage.goto(wikiLink);
 
-  // Tries to scrape the Unique Ability
-  await browserPage.waitForSelector('#Unique');
-  // const uniqueHeadingElement = await browserPage.$('#Unique');
+  // TODO: Investigate how to handle allSettled better
+  // TODO: Since we're using allSettled here, make sure each function
+  // has a valid return value and proper error catching later
+  const [
+    characterName,
+    characterAttr,
+    charEq1,
+    charEq2,
+    charEq3,
+    characterSkills,
+    characterRace,
+    characterUltimate,
+    characterUnique,
+  ] = await Promise.allSettled([
+    scrapeCharacterName(browserPage),
+    scrapeCharacterAttribute(browserPage),
+    scrapeCharacterEquipment1(browserPage),
+    scrapeCharacterEquipment2(browserPage),
+    scrapeCharacterEquipment3(browserPage),
+    scrapeCharacterSkills(browserPage),
+    scrapeCharacterRace(browserPage),
+    scrapeCharacterUltimate(browserPage),
+    scrapeCharacterUnique(browserPage),
+  ]);
 
-  // Doing $eval will give us the reference element
-  // And then inside the function we can use is as a usual HTMLElement
-  // We can't do it in Node Environment so will have to resort to this way
-  const elementText = await browserPage.$eval('#Unique', (element) => {
-    const parentOfUnique = element.parentElement;
-    console.log("Parent of Unique");
-    console.log(parentOfUnique);
-    const siblingOfHeading = parentOfUnique.nextElementSibling;
-    console.log("Sibling of Heading");
-    console.log(siblingOfHeading);
+  return `**${characterName.value || "`Failed to scrape name :(`"}**
 
-    const uniqueText = siblingOfHeading.querySelector('tbody > tr:nth-child(2) > th:nth-child(2)').innerText;
-    console.log("Unique Text");
-    console.log(uniqueText);
-    return uniqueText;
-  })
-
-  if (elementText) {
-    return elementText ||  null;
-  } else {
-    return null;
+Attribute: ${characterAttr.value || "`Failed to scrape attribute :(`"}
+Race: ${
+    characterRace.value
+      ? `${characterRace.value[0].toUpperCase()}${characterRace.value.slice(1)}`
+      : "`Failed to scrape race :(`"
   }
-  
-  // const uniqueHeadingElement = await browserPage.$('#Unique');
 
-  // return null;
+Recommended Gears:
+${
+  charEq1.value ? `Set 1 : ${charEq1.value}` : "`Failed to scrape eq. set 1 :(`"
+}
+${
+  charEq2.value ? `Set 2 : ${charEq2.value}` : "`Failed to scrape eq. set 2 :(`"
+}
+${charEq3.value ? `Set 3 : ${charEq3.value}` : ""}
 
-  // if (!uniqueHeadingElement) {
-  //   return null;
-  // }
+Skills:
+${characterSkills.value || "`Failed to scrape skills :(`"}
 
-  // const parentOfUnique = await uniqueHeadingElement.getProperty('parentNode');
+Ultimate: 
+${characterUltimate.value || "`Failed to scrape ultimate :(`"}
 
-
-  // if (!parentOfUnique) {
-  //   return null;
-  // }
-  
-  // const targetContainer = await parentOfUnique.getProperty('nextSibling');
-
-  // console.log(targetContainer);
-
-  // if (!targetContainer) {
-  //   return null;
-  // }
-
-  // const targetElement = await targetContainer.$('tbody > tr:nth-child(2)');
-
-  // const targetText = await targetElement.$eval('th:nth-child(2)', (element) => element.innerText);
-  // console.log(targetText);
-  // if (targetText) {
-  //   return targetText ||  null;
-  // } else {
-  //   return null;
-  // }
-};
+Unique: 
+${characterUnique.value || "`Failed to scrape unique :(`"}
+  `;
+}
 
 module.exports = {
-  scrape7DSWiki
+  scrape7DSWiki,
+  getCharacterImage,
 };

@@ -45,23 +45,48 @@ client.on('message', async message => {
   const args = message.content.slice(prefix.length).trim().split(' ');
 	const command = args.shift().toLowerCase();
 
-  switch (command) {
-    case BOT_COMMANDS.PING:
-      return message.channel.send('Pong.');
-    case BOT_COMMANDS.SCRAPE:
-      if (!args.length) {
-        return message.channel.send(`You didn't provide any arguments, ${message.author}!`);
-      }
+  try {
+    switch (command) {
+      case BOT_COMMANDS.PING:
+        return message.channel.send('Pong.');
+      case BOT_COMMANDS.SCRAPE:
+        if (!args.length) {
+          return message.channel.send(`You didn't provide any arguments, ${message.author}!`);
+        }
+  
+        // TODO: Add check to make sure the link passed is of the correct domain
+        console.log(args);
+  
+        const scrapedText = await scraper.scrape7DSWiki(args[0]);
+        return message.channel.send(scrapedText ? `Here's what I scraped:\n${scrapedText}` : `Failed to scrape anything from that link :(`);
+      case BOT_COMMANDS.TESTING:
+        console.log("Scraping...");
+        const testingWikiLink = 'https://7dsgc.fandom.com/wiki/Red_Purgatory_Ban';
+        const textContent = await scraper.scrape7DSWiki(testingWikiLink);
+        const imageUrl = await scraper.getCharacterImage(testingWikiLink);
 
-      // TODO: Add check to make sure the link passed is of the correct domain
-      console.log(args);
+        const fileImage = imageUrl ? {
+          embeds: [
+            {
+              thumbnail: {
+                url: 'attachment://charImage.png',
+              }
+            }
+          ],
+          files: [{
+            attachment: imageUrl,
+            name: 'charImage.png',
+          }],
+        } : {}
 
-      const scrapedText = await scraper.scrape7DSWiki(args[0]);
-      return message.channel.send(scrapedText ? `Here's what I scraped:\n${scrapedText}` : `Failed to scrape anything from that link :(`);
-    case BOT_COMMANDS.TESTING:
-      const testing = await scraper.scrape7DSWiki('https://7dsgc.fandom.com/wiki/Red_Purgatory_Ban');
-      return message.channel.send(testing);
-    default:
-      break;
+        return message.channel.send({
+          content: textContent,
+          ...fileImage,
+        });
+      default:
+        break;
+    }
+  } catch (error) {
+    console.error(error);
   }
 });
