@@ -74,28 +74,36 @@ client.on('message', async message => {
           statsImageUrls,
         } = await scraper.scrape7DSWiki(testingWikiLink);
 
-        const fileImage = charImageUrl ? {
+        const fileImage = charImageUrl && statsImageUrls[0] ? {
           embeds: [
             {
               thumbnail: {
                 url: 'attachment://charImage.png',
+              }
+            },
+            {
+              thumbnail: {
+                url: 'attachment://statsImage.png',
               }
             }
           ],
           files: [{
             attachment: charImageUrl,
             name: 'charImage.png',
+          },{
+            attachment: statsImageUrls[0],
+            name: 'statsImage.png',
           }],
         } : {}
 
-        return message.channel.send({
-          files: [await canvasHandler.generateCanvasImage(textContent, charImageUrl, statsImageUrls)]
-        })
-
         // return message.channel.send({
-        //   content: textContent,
-        //   ...fileImage,
-        // });
+        //   files: [await canvasHandler.generateCanvasImage(textContent, charImageUrl, statsImageUrls)]
+        // })
+
+        return message.channel.send({
+          content: textContent,
+          ...fileImage,
+        });
       default:
         break;
     }
